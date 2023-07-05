@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cache-padded = "1.2.0"
+crossbeam-utils = "0.8.16"
 thiserror = "1.0"
 
 [dev-dependencies]

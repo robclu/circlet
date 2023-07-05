@@ -7,7 +7,7 @@ use std::sync::{
 };
 
 #[test]
-fn unpadded_ringbuffer_simple_operations() {
+fn padded_ringbuffer_simple_operations() {
     let buffer = Arc::new(PaddedRingbuffer::<u32>::new(11));
     assert!(buffer.size() == 0 && buffer.empty());
 
@@ -34,7 +34,7 @@ fn unpadded_ringbuffer_simple_operations() {
 }
 
 #[test]
-fn unpadded_try_push_and_pop() {
+fn padded_try_push_and_pop() {
     let buffer = Arc::new(PaddedRingbuffer::<i32>::new(1));
     let (mut producer, mut consumer) = channel(buffer.clone());
 
@@ -61,10 +61,10 @@ fn unpadded_try_push_and_pop() {
 }
 
 #[test]
-fn unpadded_stress_test() {
-    const ELEMENTS: usize = 1_000_000;
+fn padded_stress_test() {
+    const ELEMENTS: usize = 10_000_000;
 
-    let threads_total = get_physical().max(2) * 2;
+    let threads_total = get_physical().max(2);
     let threads_half = (threads_total / 2).max(1);
     let buffer = Arc::new(PaddedRingbuffer::<usize>::new(threads_half as u32));
     let flag = Arc::new(AtomicBool::new(false));
@@ -75,9 +75,9 @@ fn unpadded_stress_test() {
         let mut producer = producer(buffer.clone());
         let flag = flag.clone();
         threads.push(std::thread::spawn(move || {
-            core_affinity::set_for_current(CoreId { id: i as usize });
+            core_affinity::set_for_current(CoreId { id: i });
 
-            while flag.load(Ordering::Relaxed) == false {
+            while !flag.load(Ordering::Relaxed) {
                 std::hint::spin_loop();
             }
 
@@ -92,9 +92,9 @@ fn unpadded_stress_test() {
         let flag = flag.clone();
         let sum = sum.clone();
         threads.push(std::thread::spawn(move || {
-            core_affinity::set_for_current(CoreId { id: i as usize });
+            core_affinity::set_for_current(CoreId { id: i });
 
-            while flag.load(Ordering::Relaxed) == false {
+            while !flag.load(Ordering::Relaxed) {
                 std::hint::spin_loop();
             }
 
@@ -118,9 +118,10 @@ fn unpadded_stress_test() {
     let end = std::time::Instant::now();
     let time = (end - start).as_micros();
     println!(
-        "Time: {}us {}M/sec",
+        "Time: {}us {}M/sec on {} threads",
         time,
-        ELEMENTS * 1_000_000 / time as usize
+        ELEMENTS * 1_000_000 / time as usize,
+        threads_total
     );
 
     assert!(sum.load(Ordering::Relaxed) == ELEMENTS * (ELEMENTS - 1) / 2);

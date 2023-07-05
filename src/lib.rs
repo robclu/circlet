@@ -1,6 +1,6 @@
 //!< Module for ringbuffers.
 
-use cache_padded::CachePadded;
+use crossbeam_utils::CachePadded;
 use std::cell::UnsafeCell;
 use std::default::Default;
 use std::marker::Sized;
